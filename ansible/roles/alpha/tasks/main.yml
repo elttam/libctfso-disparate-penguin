@@ -1,0 +1,34 @@
+---
+- name: Create challenge group
+  group:
+    name: "{{ flag_group }}"
+    state: present
+
+- name: Create flag user
+  user:
+    name: "{{ flag_user }}"
+    group: "{{ flag_group }}"
+    create_home: False
+
+- name: Make /etc/passwd have crypted password
+  lineinfile:
+    path: /etc/passwd
+    regexp: '^({{ flag_user }}):(.*?):(.*)$'
+    line: '\1:$1$bDkETNg1$g4NNYscI8L.VIlWf4OP4u0:\3'
+    backrefs: Yes
+
+- name: Create challenge directory
+  file:
+    path: "{{ challenges_root_path }}/{{ challenge_name }}"
+    state: directory
+    owner: "{{ flag_user }}"
+    group: "{{ ctf_group }}"
+    mode: 0750
+
+- name: Create flag file
+  copy:
+    src: flag.txt
+    dest: "{{ flag_path }}"
+    owner: "{{ flag_user }}"
+    group: "{{ flag_user }}"
+    mode: 0600

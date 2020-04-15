@@ -1,0 +1,59 @@
+#define _GNU_SOURCE
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <unistd.h>
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+
+#define FLAG "{{ flag_path }}"
+
+char * get_secret(void)
+{
+	int fd = -1;
+        char *buffer = NULL;
+
+	fd = open(FLAG, O_RDONLY);
+	if(fd == -1) return NULL;
+
+        buffer = calloc(1, 1024);
+        if(!buffer) return NULL;
+
+	read(fd, buffer, 1023);
+        if(buffer[strlen(buffer)-1] == '\n')
+          buffer[strlen(buffer)-1] = '\0';
+	return buffer;
+}
+
+int main(int argc, char **argv, char **envp)
+{
+        uid_t ruid, euid, suid;
+        gid_t rgid, egid, sgid;
+
+	if(argc <= 2) {
+		printf("%s <secret> <commandline>\n", argv[0] == NULL ? "./challenge" : argv[0]);
+		exit(1);
+	}
+
+	if(strcmp(argv[1], get_secret())) {
+                getresuid(&ruid, &euid, &suid);
+                getresgid(&rgid, &egid, &sgid);
+                printf("ruid=%d euid=%d suid=%d\n", ruid, euid, suid);
+                printf("rgid=%d egid=%d sgid=%d\n", rgid, egid, sgid);
+                setresuid(ruid, ruid, ruid);
+                setresgid(rgid, rgid, rgid);
+                printf("dropping privs...\n");
+                getresuid(&ruid, &euid, &suid);
+                getresgid(&rgid, &egid, &sgid);
+                printf("ruid=%d euid=%d suid=%d\n", ruid, euid, suid);
+                printf("rgid=%d egid=%d sgid=%d\n", rgid, egid, sgid);
+	}
+
+        argv[0] = "/bin/bash";
+        argv[1] = "-c";
+
+        execve(argv[0], argv, envp);
+        perror("execve");
+        exit(EXIT_FAILURE);
+}

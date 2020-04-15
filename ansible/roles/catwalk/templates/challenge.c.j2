@@ -1,0 +1,47 @@
+#include <stdio.h>
+#include <stdlib.h>
+#include <unistd.h>
+#include <string.h>
+#include <fcntl.h>
+
+#define FLAG "{{ flag_path }}"
+
+int main(int argc, char **argv, char **envp)
+{
+	FILE *fp = fopen(FLAG, "r");
+	char buffer1[1024] = {0};
+	char buffer2[1024] = {0};
+        int ret = EXIT_FAILURE;
+        char *p;
+
+	if(NULL == fp) {
+		perror("open");
+                goto fail;
+	}
+
+	fprintf(stdout, "Please enter the secret key: ");
+        fgets(buffer1, sizeof(buffer1), stdin);
+        if(NULL != (p = strchr(buffer1, '\n')))
+          *p = '\0';
+
+	fgets(buffer2, sizeof(buffer2), fp);
+        if(NULL != (p = strchr(buffer2, '\n')))
+          *p = '\0';
+
+        // stop 0-byte strcmp
+        if(0 == strlen(buffer1)) {
+          fprintf(stderr, "Invalid secret key entered.\n");
+          goto fail;
+        }
+
+	if(strcmp(buffer1, buffer2)) {
+		fprintf(stdout, "%s is the wrong secret.. You shall not pass.\n", buffer1);
+                goto fail;
+	}
+
+	fprintf(stdout, "You found the secret!\n");
+        ret = EXIT_SUCCESS;
+
+fail:
+        exit(ret);
+}

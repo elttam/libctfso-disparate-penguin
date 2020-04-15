@@ -1,0 +1,11 @@
+[Unit]
+Description=randex
+After=multi-user.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/ncat --ssl -nvlkp 8443 -m1000 -c {{ challenge_root }}/{{ challenge_name }}.py
+User={{ flag_user }}
+
+[Install]
+WantedBy=multi-user.target
